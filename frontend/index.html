@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DeskMate IT Helpdesk</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: #f5f7fb;
+      color: #333;
+      height: 100vh;
+      overflow: hidden;
+    }
+    
+    .container {
+      display: flex;
+      height: 100vh;
+      width: 100%;
+    }
+    
+    /* LEFT: Chat Column (2/3 width) */
+    .chat-column {
+      flex: 2;
+      display: flex;
+      flex-direction: column;
+      background: #ffffff;
+      border-right: 1px solid #e2e8f0;
+      height: 100%;
+    }
+    
+    .chat-header {
+      padding: 24px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #ffffff;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .chat-header-title h1 {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 6px;
+      letter-spacing: -0.5px;
+    }
+    
+    .chat-header-title p {
+      font-size: 14px;
+      opacity: 0.9;
+    }
+    
+    #newChatBtn {
+      padding: 10px 18px;
+      background: rgba(255, 255, 255, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 8px;
+      color: #ffffff;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 14px;
+      transition: background-color 0.2s, border-color 0.2s;
+      outline: none;
+    }
+    
+    #newChatBtn:hover {
+      background: rgba(255, 255, 255, 0.3);
+      border-color: rgba(255, 255, 255, 0.5);
+    }
+    
+    #newChatBtn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    
+    .chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px;
+      background: #f8fafc;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    
+    .message {
+      max-width: 85%;
+      padding: 14px 18px;
+      border-radius: 12px;
+      line-height: 1.5;
+      font-size: 15px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      word-wrap: break-word;
+    }
+    
+    .message.user {
+      align-self: flex-end;
+      background: #e3f2fd;
+      border-left: 4px solid #2196f3;
+      color: #0d47a1;
+      border-top-right-radius: 4px;
+    }
+    
+    .message.assistant {
+      align-self: flex-start;
+      background: #ffffff;
+      border-left: 4px solid #999999;
+      color: #2d3748;
+      border-top-left-radius: 4px;
+      border: 1px solid #edf2f7;
+      border-left: 4px solid #4a5568;
+    }
+    
+    .message.error {
+      align-self: flex-start;
+      background: #ffebee;
+      border-left: 4px solid #f44336;
+      color: #c62828;
+      border-top-left-radius: 4px;
+    }
+    
+    .message.system {
+      align-self: center;
+      background: #fffbeb;
+      border: 1px solid #fef3c7;
+      border-left: 4px solid #d97706;
+      color: #b45309;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      max-width: 90%;
+    }
+    
+    .message-sender {
+      font-weight: 700;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+      opacity: 0.75;
+    }
+    
+    .chat-input-area {
+      padding: 20px 24px;
+      background: #ffffff;
+      border-top: 1px solid #e2e8f0;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    
+    #employeeSelect {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      font-size: 14px;
+      background-color: #f8fafc;
+      color: #334155;
+      cursor: pointer;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    
+    #employeeSelect:focus {
+      border-color: #667eea;
+    }
+    
+    .input-group {
+      display: flex;
+      gap: 12px;
+    }
+    
+    #messageInput {
+      flex: 1;
+      padding: 12px 16px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      font-size: 15px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    
+    #messageInput:focus {
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+    }
+    
+    #sendBtn {
+      padding: 12px 24px;
+      background: #667eea;
+      color: #ffffff;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 15px;
+      transition: background-color 0.2s, transform 0.1s;
+      outline: none;
+    }
+    
+    #sendBtn:hover {
+      background: #764ba2;
+    }
+    
+    #sendBtn:active {
+      transform: scale(0.98);
+    }
+    
+    #sendBtn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+    
+    /* RIGHT: Observability Column (1/3 width) */
+    .observability-column {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: #f8fafc;
+      height: 100%;
+    }
+    
+    .observability-header {
+      padding: 24px;
+      border-bottom: 1px solid #e2e8f0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #ffffff;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+    
+    .observability-header h3 {
+      font-size: 16px;
+      font-weight: 700;
+      color: #1e293b;
+    }
+    
+    .observability-header button {
+      padding: 6px 12px;
+      background: #ef4444;
+      color: #ffffff;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+      transition: background-color 0.2s;
+    }
+    
+    .observability-header button:hover {
+      background: #dc2626;
+    }
+    
+    .trace-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px;
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+      font-size: 12px;
+      background: #0f172a;
+      color: #e2e8f0;
+    }
+    
+    .trace-placeholder {
+      color: #64748b;
+      font-family: inherit;
+      text-align: center;
+      margin-top: 40px;
+    }
+    
+    .trace-content pre {
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      background: transparent;
+      border: none;
+      padding: 0;
+      overflow-x: visible;
+    }
+    
+    /* Responsive layout styling */
+    @media (max-width: 900px) {
+      .container {
+        flex-direction: column;
+      }
+      .chat-column {
+        height: 60%;
+        border-right: none;
+        border-bottom: 1px solid #e2e8f0;
+      }
+      .observability-column {
+        height: 40%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- LEFT: Chat Interface -->
+    <div class="chat-column">
+      <div class="chat-header">
+        <div class="chat-header-title">
+          <h1>DeskMate IT Helpdesk</h1>
+          <p>Ask questions about software access, tickets, and IT support.</p>
+        </div>
+        <button id="newChatBtn" onclick="startNewChat()">New Chat</button>
+      </div>
+      
+      <div class="chat-messages" id="chatMessages">
+        <div class="message assistant">
+          <div class="message-sender">DeskMate</div>
+          Welcome! I am DeskMate, your automated IT helpdesk assistant. How can I help you today?
+        </div>
+      </div>
+      
+      <div class="chat-input-area">
+        <select id="employeeSelect">
+          <option value="employee_one">Alice Johnson (employee_one)</option>
+          <option value="employee_two">Bob Smith (employee_two)</option>
+        </select>
+        
+        <div class="input-group">
+          <input
+            type="text"
+            id="messageInput"
+            placeholder="Ask a question (e.g., 'I need Adobe Creative Suite access')..."
+            onkeypress="handleKeyPress(event)"
+            autocomplete="off"
+          />
+          <button id="sendBtn" onclick="sendMessage()">Send</button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- RIGHT: Observability Panel -->
+    <div class="observability-column">
+      <div class="observability-header">
+        <h3>Execution Trace</h3>
+        <button onclick="clearTrace()">Clear</button>
+      </div>
+      
+      <div class="trace-content" id="traceContent">
+        <div class="trace-placeholder" id="tracePlaceholder">Awaiting first request...</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Robust backend host fallback:
+    const API_BASE = window.location.origin.endsWith(":8000") ? window.location.origin : "http://localhost:8000";
+
+    // Setup Event Listeners
+    document.getElementById("employeeSelect").addEventListener("change", loadChatHistory);
+    window.addEventListener("DOMContentLoaded", loadChatHistory);
+
+    async function loadChatHistory() {
+      const username = document.getElementById("employeeSelect").value;
+      const chatMessages = document.getElementById("chatMessages");
+      const messageInput = document.getElementById("messageInput");
+      const sendBtn = document.getElementById("sendBtn");
+      
+      // Reset to default greeting
+      chatMessages.innerHTML = `
+        <div class="message assistant">
+          <div class="message-sender">DeskMate</div>
+          Welcome! I am DeskMate, your automated IT helpdesk assistant. How can I help you today?
+        </div>
+      `;
+      
+      // Enable inputs by default
+      messageInput.disabled = false;
+      sendBtn.disabled = false;
+      messageInput.placeholder = "Ask a question (e.g., 'I need Adobe Creative Suite access')...";
+      
+      try {
+        const response = await fetch(`${API_BASE}/api/history/${username}`);
+        if (!response.ok) {
+          throw new Error(`HTTP Error ${response.status}`);
+        }
+        const data = await response.json();
+        
+        // Render history messages
+        if (data.messages && data.messages.length > 0) {
+          data.messages.forEach(msg => {
+            const sender = msg.role === "user" ? "User" : "DeskMate";
+            const role = msg.role === "user" ? "user" : "assistant";
+            addMessageToChat(sender, msg.content, role);
+          });
+        }
+        
+        // Handle limit check
+        if (data.limit_reached) {
+          disableChatInput();
+        }
+      } catch (error) {
+        console.error("Failed to load chat history:", error);
+        addMessageToChat("DeskMate", `Warning: Could not load chat history from server.`, "error");
+      }
+    }
+
+    function disableChatInput() {
+      const messageInput = document.getElementById("messageInput");
+      const sendBtn = document.getElementById("sendBtn");
+      
+      messageInput.disabled = true;
+      sendBtn.disabled = true;
+      messageInput.placeholder = "Conversation limit reached. Click 'New Chat' to reset.";
+      
+      addMessageToChat("System", "⚠️ Conversation limit reached (10 messages). Please click 'New Chat' in the top right to start a new session.", "system");
+    }
+
+    async function startNewChat() {
+      const username = document.getElementById("employeeSelect").value;
+      const newChatBtn = document.getElementById("newChatBtn");
+      const originalText = newChatBtn.textContent;
+      
+      newChatBtn.disabled = true;
+      newChatBtn.textContent = "Clearing...";
+      
+      try {
+        const response = await fetch(`${API_BASE}/api/chat/new`, {
+          method: "POST",
+          headers: { 
+            "Content-Type": "application/json" 
+          },
+          body: JSON.stringify({ username })
+        });
+        
+        if (!response.ok) {
+          throw new Error(`HTTP Error ${response.status}`);
+        }
+        
+        // Reload history (which will reset the chat messages UI and enable inputs)
+        await loadChatHistory();
+        clearTrace();
+      } catch (error) {
+        console.error("Failed to clear chat history:", error);
+        alert(`Failed to start new chat: ${error.message}`);
+      } finally {
+        newChatBtn.disabled = false;
+        newChatBtn.textContent = originalText;
+      }
+    }
+
+    async function sendMessage() {
+      const messageInput = document.getElementById("messageInput");
+      const message = messageInput.value.trim();
+      const username = document.getElementById("employeeSelect").value;
+      const sendBtn = document.getElementById("sendBtn");
+      
+      if (!message) return;
+      
+      // Add user message to chat UI
+      addMessageToChat("User", message, "user");
+      messageInput.value = "";
+      
+      // Disable UI controls while loading
+      sendBtn.disabled = true;
+      messageInput.disabled = true;
+      
+      // Show loading placeholder in execution trace panel
+      document.getElementById("traceContent").innerHTML = '<div class="trace-placeholder">Processing agent reasoning loop...</div>';
+      
+      try {
+        const response = await fetch(`${API_BASE}/api/chat`, {
+          method: "POST",
+          headers: { 
+            "Content-Type": "application/json" 
+          },
+          body: JSON.stringify({ message, username })
+        });
+        
+        if (!response.ok) {
+          const errData = await response.json().catch(() => ({}));
+          throw new Error(errData.detail || `HTTP Error ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        // Add assistant response to chat UI
+        if (data.status === "success") {
+          addMessageToChat("DeskMate", data.response, "assistant");
+        } else if (data.status === "limit_reached") {
+          addMessageToChat("System", data.response, "system");
+        } else {
+          addMessageToChat("DeskMate", data.response || "An error occurred.", "error");
+        }
+        
+        // Update execution trace panel
+        updateTrace(data.execution_trace);
+        
+        // Disable chat input if limit has been reached
+        if (data.limit_reached) {
+          disableChatInput();
+        }
+        
+      } catch (error) {
+        addMessageToChat("DeskMate", `Error: ${error.message}`, "error");
+        updateTrace([{ error: error.message, timestamp: new Date().toISOString() }]);
+      } finally {
+        // Re-enable UI controls only if limit is not reached
+        const limitReached = document.getElementById("messageInput").placeholder.includes("limit reached");
+        if (!limitReached) {
+          sendBtn.disabled = false;
+          messageInput.disabled = false;
+          messageInput.focus();
+        }
+      }
+    }
+
+    function addMessageToChat(sender, text, role) {
+      const messagesDiv = document.getElementById("chatMessages");
+      const msgDiv = document.createElement("div");
+      msgDiv.className = `message ${role}`;
+      
+      const senderDiv = document.createElement("div");
+      senderDiv.className = "message-sender";
+      senderDiv.textContent = sender;
+      
+      const textDiv = document.createElement("div");
+      textDiv.textContent = text;
+      
+      msgDiv.appendChild(senderDiv);
+      msgDiv.appendChild(textDiv);
+      
+      messagesDiv.appendChild(msgDiv);
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    }
+
+    function updateTrace(trace) {
+      const traceDiv = document.getElementById("traceContent");
+      traceDiv.innerHTML = `<pre>${escapeHtml(JSON.stringify(trace, null, 2))}</pre>`;
+    }
+
+    function clearTrace() {
+      document.getElementById("traceContent").innerHTML = '<div class="trace-placeholder" id="tracePlaceholder">Awaiting first request...</div>';
+    }
+
+    function handleKeyPress(event) {
+      if (event.key === "Enter") {
+        sendMessage();
+      }
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement("div");
+      div.textContent = text;
+      return div.innerHTML;
+    }
+  </script>
+</body>
+</html>
