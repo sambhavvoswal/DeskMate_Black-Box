@@ -57,7 +57,27 @@
       opacity: 0.9;
     }
     
-    #newChatBtn {
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    
+    .provider-badge {
+      font-size: 12px;
+      font-weight: 700;
+      background: rgba(255, 255, 255, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      padding: 6px 12px;
+      border-radius: 12px;
+      color: #ffffff;
+      letter-spacing: 0.5px;
+      display: inline-flex;
+      align-items: center;
+      transition: all 0.3s ease;
+    }
+    
+    #newChatBtn, #myTicketsBtn {
       padding: 10px 18px;
       background: rgba(255, 255, 255, 0.15);
       border: 1px solid rgba(255, 255, 255, 0.3);
@@ -66,19 +86,210 @@
       cursor: pointer;
       font-weight: 600;
       font-size: 14px;
-      transition: background-color 0.2s, border-color 0.2s;
+      transition: background-color 0.2s, border-color 0.2s, transform 0.1s;
       outline: none;
     }
     
-    #newChatBtn:hover {
+    #newChatBtn:hover, #myTicketsBtn:hover {
       background: rgba(255, 255, 255, 0.3);
       border-color: rgba(255, 255, 255, 0.5);
     }
     
-    #newChatBtn:disabled {
+    #newChatBtn:active, #myTicketsBtn:active {
+      transform: scale(0.98);
+    }
+    
+    #newChatBtn:disabled, #myTicketsBtn:disabled {
       opacity: 0.6;
       cursor: not-allowed;
+      transform: none;
     }
+    
+    /* Modal styles */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(4px);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      transition: all 0.3s ease;
+    }
+    
+    .modal-content {
+      background: #ffffff;
+      width: 90%;
+      max-width: 650px;
+      border-radius: 16px;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04), 0 0 0 1px rgba(0,0,0,0.05);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      max-height: 80vh;
+      animation: modalFadeIn 0.25s ease-out;
+    }
+    
+    @keyframes modalFadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(15px) scale(0.98);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+    
+    .modal-header {
+      padding: 18px 24px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #ffffff;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .modal-header h3 {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+    
+    .modal-close-btn {
+      background: transparent;
+      border: none;
+      color: rgba(255, 255, 255, 0.8);
+      font-size: 28px;
+      font-weight: 300;
+      cursor: pointer;
+      outline: none;
+      transition: color 0.2s;
+      line-height: 1;
+    }
+    
+    .modal-close-btn:hover {
+      color: #ffffff;
+    }
+    
+    .modal-body {
+      padding: 24px;
+      overflow-y: auto;
+      flex: 1;
+    }
+    
+    .tickets-table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 14px;
+    }
+    
+    .tickets-table th {
+      color: #475569;
+      font-weight: 600;
+      padding: 12px 16px;
+      border-bottom: 2px solid #e2e8f0;
+      background: #f8fafc;
+    }
+    
+    .tickets-table td {
+      padding: 14px 16px;
+      border-bottom: 1px solid #edf2f7;
+      color: #334155;
+    }
+    
+    .tickets-table tr:hover {
+      background: #f8fafc;
+    }
+    
+    .priority-badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .priority-badge.low {
+      background: #f0fdf4;
+      color: #166534;
+      border: 1px solid #bbf7d0;
+    }
+    .priority-badge.medium {
+      background: #fef8e6;
+      color: #a16207;
+      border: 1px solid #fef08a;
+    }
+    .priority-badge.high {
+      background: #fff5f5;
+      color: #9b1c1c;
+      border: 1px solid #feb2b2;
+    }
+    .priority-badge.critical {
+      background: #fef2f2;
+      color: #991b1b;
+      border: 1px solid #fee2e2;
+    }
+    
+    .status-badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: capitalize;
+    }
+    .status-badge.open {
+      background: #eff6ff;
+      color: #1e40af;
+      border: 1px solid #bfdbfe;
+    }
+    .status-badge.assigned {
+      background: #faf5ff;
+      color: #6b21a8;
+      border: 1px solid #e9d5ff;
+    }
+    .status-badge.closed {
+      background: #f1f5f9;
+      color: #475569;
+      border: 1px solid #cbd5e1;
+    }
+    
+    .modal-footer {
+      padding: 16px 24px;
+      background: #f8fafc;
+      border-top: 1px solid #e2e8f0;
+      display: flex;
+      justify-content: flex-end;
+    }
+    
+    .modal-action-btn {
+      padding: 10px 20px;
+      background: #64748b;
+      color: #ffffff;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 14px;
+      transition: background-color 0.2s, transform 0.1s;
+      outline: none;
+    }
+    
+    .modal-action-btn:hover {
+      background: #475569;
+    }
+    
+    .modal-action-btn:active {
+      transform: scale(0.98);
+    }
+
     
     .chat-messages {
       flex: 1;
@@ -171,6 +382,55 @@
     
     #employeeSelect:focus {
       border-color: #667eea;
+    }
+    
+    .suggested-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      margin-top: 2px;
+      margin-bottom: 2px;
+    }
+    
+    .chip-label {
+      font-size: 12px;
+      color: #64748b;
+      font-weight: 600;
+      margin-right: 4px;
+    }
+    
+    .query-chip {
+      background: #f1f5f9;
+      border: 1px solid #e2e8f0;
+      color: #475569;
+      padding: 6px 12px;
+      border-radius: 16px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      outline: none;
+    }
+    
+    .query-chip:hover {
+      background: #e2e8f0;
+      border-color: #cbd5e1;
+      color: #1e293b;
+      transform: translateY(-1px);
+    }
+    
+    .query-chip:active {
+      transform: translateY(0);
+    }
+    
+    .query-chip:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+      background: #f8fafc;
+      border-color: #f1f5f9;
+      color: #cbd5e1;
     }
     
     .input-group {
@@ -312,7 +572,11 @@
           <h1>DeskMate IT Helpdesk</h1>
           <p>Ask questions about software access, tickets, and IT support.</p>
         </div>
-        <button id="newChatBtn" onclick="startNewChat()">New Chat</button>
+        <div class="header-actions">
+          <span id="providerBadge" class="provider-badge">Connecting...</span>
+          <button id="myTicketsBtn" onclick="showMyTickets()">My Tickets</button>
+          <button id="newChatBtn" onclick="startNewChat()">New Chat</button>
+        </div>
       </div>
       
       <div class="chat-messages" id="chatMessages">
@@ -327,6 +591,14 @@
           <option value="employee_one">Alice Johnson (employee_one)</option>
           <option value="employee_two">Bob Smith (employee_two)</option>
         </select>
+        
+        <!-- Suggested Query Chips -->
+        <div class="suggested-chips">
+          <span class="chip-label">Suggestions:</span>
+          <button class="query-chip" onclick="applySuggestion('Check my Adobe access')">Check my Adobe access</button>
+          <button class="query-chip" onclick="applySuggestion('I need Jira access')">I need Jira access</button>
+          <button class="query-chip" onclick="applySuggestion('What\'s the status of TKT-892345?')">Ticket status</button>
+        </div>
         
         <div class="input-group">
           <input
@@ -355,12 +627,46 @@
   </div>
 
   <script>
-    // Robust backend host fallback:
-    const API_BASE = window.location.origin.endsWith(":8000") ? window.location.origin : "http://localhost:8000";
+    // Hardcode your Hugging Face space backend URL here (e.g. "https://username-space.hf.space")
+    // If left empty, it will fall back to local development defaults.
+    const BACKEND_URL = "https://sambhavvoswal/deskmate-api.hf.space"; 
+
+    const API_BASE = BACKEND_URL || (window.location.origin.endsWith(":8000") ? window.location.origin : "http://localhost:8000");
 
     // Setup Event Listeners
     document.getElementById("employeeSelect").addEventListener("change", loadChatHistory);
-    window.addEventListener("DOMContentLoaded", loadChatHistory);
+    window.addEventListener("DOMContentLoaded", () => {
+      loadChatHistory();
+      loadActiveProvider();
+    });
+
+    async function loadActiveProvider() {
+      const badge = document.getElementById("providerBadge");
+      try {
+        const response = await fetch(`${API_BASE}/api/provider`);
+        if (response.ok) {
+          const data = await response.json();
+          if (data.provider && data.provider.startsWith("None")) {
+            badge.style.display = "none";
+          } else {
+            badge.style.display = "inline-flex";
+            badge.textContent = data.provider;
+            if (data.provider.includes("Claude")) {
+              badge.style.background = "rgba(217, 119, 6, 0.25)"; // warm amber/orange
+              badge.style.borderColor = "rgba(217, 119, 6, 0.5)";
+            } else if (data.provider.includes("OpenRouter") || data.provider.includes("Gemini")) {
+              badge.style.background = "rgba(59, 130, 246, 0.25)"; // blue
+              badge.style.borderColor = "rgba(59, 130, 246, 0.5)";
+            }
+          }
+        } else {
+          badge.style.display = "none";
+        }
+      } catch (error) {
+        console.error("Failed to load active provider config:", error);
+        badge.style.display = "none";
+      }
+    }
 
     async function loadChatHistory() {
       const username = document.getElementById("employeeSelect").value;
@@ -376,10 +682,12 @@
         </div>
       `;
       
-      // Enable inputs by default
+      // Enable inputs and chips by default
       messageInput.disabled = false;
       sendBtn.disabled = false;
       messageInput.placeholder = "Ask a question (e.g., 'I need Adobe Creative Suite access')...";
+      const chips = document.querySelectorAll(".query-chip");
+      chips.forEach(chip => chip.disabled = false);
       
       try {
         const response = await fetch(`${API_BASE}/api/history/${username}`);
@@ -414,6 +722,10 @@
       messageInput.disabled = true;
       sendBtn.disabled = true;
       messageInput.placeholder = "Conversation limit reached. Click 'New Chat' to reset.";
+      
+      // Disable chips
+      const chips = document.querySelectorAll(".query-chip");
+      chips.forEach(chip => chip.disabled = true);
       
       addMessageToChat("System", "⚠️ Conversation limit reached (10 messages). Please click 'New Chat' in the top right to start a new session.", "system");
     }
@@ -466,6 +778,8 @@
       // Disable UI controls while loading
       sendBtn.disabled = true;
       messageInput.disabled = true;
+      const chips = document.querySelectorAll(".query-chip");
+      chips.forEach(chip => chip.disabled = true);
       
       // Show loading placeholder in execution trace panel
       document.getElementById("traceContent").innerHTML = '<div class="trace-placeholder">Processing agent reasoning loop...</div>';
@@ -512,9 +826,18 @@
         if (!limitReached) {
           sendBtn.disabled = false;
           messageInput.disabled = false;
+          const chips = document.querySelectorAll(".query-chip");
+          chips.forEach(chip => chip.disabled = false);
           messageInput.focus();
         }
       }
+    }
+
+    function applySuggestion(text) {
+      const messageInput = document.getElementById("messageInput");
+      if (messageInput.disabled) return;
+      messageInput.value = text;
+      messageInput.focus();
     }
 
     function addMessageToChat(sender, text, role) {
@@ -556,6 +879,138 @@
       div.textContent = text;
       return div.innerHTML;
     }
+
+    async function showMyTickets() {
+      const username = document.getElementById("employeeSelect").value;
+      const modal = document.getElementById("ticketsModal");
+      const loading = document.getElementById("ticketsLoading");
+      const errorDiv = document.getElementById("ticketsError");
+      const noTickets = document.getElementById("noTicketsMessage");
+      const tableContainer = document.getElementById("ticketsTableContainer");
+      const tableBody = document.getElementById("ticketsTableBody");
+      
+      // Reset views
+      modal.style.display = "flex";
+      loading.style.display = "block";
+      errorDiv.style.display = "none";
+      noTickets.style.display = "none";
+      tableContainer.style.display = "none";
+      tableBody.innerHTML = "";
+      
+      try {
+        const response = await fetch(`${API_BASE}/api/tickets/${username}`);
+        if (!response.ok) {
+          throw new Error(`HTTP Error ${response.status}`);
+        }
+        
+        const data = await response.json();
+        loading.style.display = "none";
+        
+        if (data.tickets && data.tickets.length > 0) {
+          data.tickets.forEach(ticket => {
+            const tr = document.createElement("tr");
+            
+            // Ticket ID cell
+            const tdId = document.createElement("td");
+            tdId.style.fontWeight = "600";
+            tdId.style.color = "#1e293b";
+            tdId.textContent = ticket.ticket_id;
+            tr.appendChild(tdId);
+            
+            // Software cell
+            const tdSoftware = document.createElement("td");
+            const rawSoftware = ticket.software_name;
+            const displayName = rawSoftware.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+            tdSoftware.textContent = displayName;
+            tr.appendChild(tdSoftware);
+            
+            // Priority cell
+            const tdPriority = document.createElement("td");
+            const priorityBadge = document.createElement("span");
+            priorityBadge.className = `priority-badge ${ticket.priority}`;
+            priorityBadge.textContent = ticket.priority;
+            tdPriority.appendChild(priorityBadge);
+            tr.appendChild(tdPriority);
+            
+            // Status cell
+            const tdStatus = document.createElement("td");
+            const statusBadge = document.createElement("span");
+            statusBadge.className = `status-badge ${ticket.status}`;
+            statusBadge.textContent = ticket.status;
+            tdStatus.appendChild(statusBadge);
+            tr.appendChild(tdStatus);
+            
+            tableBody.appendChild(tr);
+          });
+          tableContainer.style.display = "block";
+        } else {
+          noTickets.style.display = "block";
+        }
+      } catch (err) {
+        console.error("Failed to load tickets:", err);
+        loading.style.display = "none";
+        errorDiv.textContent = `Error: ${err.message || 'Could not connect to database.'}`;
+        errorDiv.style.display = "block";
+      }
+    }
+    
+    function closeTicketsModal() {
+      document.getElementById("ticketsModal").style.display = "none";
+    }
+    
+    // Close modal if clicking outside modal-content
+    window.addEventListener("click", (e) => {
+      const modal = document.getElementById("ticketsModal");
+      if (e.target === modal) {
+        closeTicketsModal();
+      }
+    });
+    
+    // Close modal on Escape key
+    window.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") {
+        closeTicketsModal();
+      }
+    });
   </script>
+
+  <!-- Modal for displaying tickets -->
+  <div id="ticketsModal" class="modal-overlay" style="display: none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>My Raised Tickets</h3>
+        <button class="modal-close-btn" onclick="closeTicketsModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div id="ticketsLoading" style="display: none; text-align: center; padding: 20px; color: #64748b;">
+          Loading tickets...
+        </div>
+        <div id="ticketsError" style="display: none; color: #ef4444; text-align: center; padding: 20px;">
+          Failed to load tickets.
+        </div>
+        <div id="noTicketsMessage" style="display: none; text-align: center; padding: 20px; color: #64748b;">
+          No tickets found for this employee.
+        </div>
+        <div id="ticketsTableContainer">
+          <table class="tickets-table">
+            <thead>
+              <tr>
+                <th>Ticket ID</th>
+                <th>Software Name</th>
+                <th>Priority</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="ticketsTableBody">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="modal-action-btn" onclick="closeTicketsModal()">Close</button>
+      </div>
+    </div>
+  </div>
 </body>
 </html>

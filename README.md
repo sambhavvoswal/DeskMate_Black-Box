@@ -1,93 +1,160 @@
-# DeskMate IT Helpdesk AI Assistant
+# DeskMate: Automated IT Helpdesk AI Assistant (POC)
 
-DeskMate is a production-grade Proof of Concept (POC) for an AI-powered IT helpdesk assistant. It enables natural language user interactions to resolve software access requests and check support ticket status using multi-step reasoning capabilities.
+Welcome to **DeskMate**, a production-grade Proof of Concept (POC) for an intelligent, multi-step IT Helpdesk AI Assistant. DeskMate allows users to check software entitlements, request software access via automatically generated tickets, and query ticket statuses using natural language.
 
-The assistant is powered by Anthropic's Claude 3.5 Sonnet using its native tool calling system, integrated with a live MongoDB Atlas cluster, and runs on a fast, lightweight FastAPI backend with a custom split-screen web frontend featuring full execution trace observability.
-
----
-
-## Features
-
-- **Multi-step Agentic Loop**: Leverages Claude's native function calling to evaluate entitlements, make decision-making loops (e.g. check entitlement -> conditionally create ticket -> report status), and resolve employee support issues dynamically.
-- **Production-Grade Error Resilience**: Wraps database connections and API queries in comprehensive safety blocks. Database timeout errors, missing employee records, or rate-limiting are intercepted and translated into user-friendly responses without crashing the server.
-- **Observability execution Pane**: Real-time logging of tool inputs, results, and LLM reasoning steps directly within the frontend.
-- **Context-Aware Entitlements**: Automatic test profile switching in the frontend allows simulating queries as different employees.
+DeskMate features a dual-provider orchestration (preferring **OpenRouter/Gemini** to conserve API tokens, with automatic fallback to **Anthropic/Claude**), interactive suggestion chips, dynamic AI provider badges, connection resilience (degrades gracefully if database is offline), and a split-screen execution trace observability pane.
 
 ---
 
-## Setup & Installation
+## 🚀 Quick Start & Local Run Guide
+
+This section is designed to help you get DeskMate up and running on your local machine in under 5 minutes.
 
 ### 1. Prerequisites
-- Python 3.8 or higher installed on your system.
-- An Anthropic API Key (Claude Sonnet 3.5 access).
-- A MongoDB Atlas connection URI (with database write permissions).
+Before starting, ensure you have:
+*   **Python 3.8+** installed.
+*   **An API Key** for one (or both) of:
+    *   **OpenRouter** (For Gemini 2.0 Flash - recommended)
+    *   **Anthropic** (For Claude 3.5 Sonnet)
+*   **A MongoDB Atlas Connection String**.
+    *   *Note: If MongoDB is offline or unreachable, DeskMate will still launch and run in **degraded mode** so you can interact with the chat interface.*
 
-### 2. Install Dependencies
-Clone the repository, go into the workspace root, and run:
+---
+
+### 2. Installation Steps
+
+#### Step A: Clone & Prepare Workspace
+Clone this repository to your local machine, open your terminal, and navigate to the project directory:
+```bash
+cd DeskMate_Black-Box
+```
+
+#### Step B: Set Up a Virtual Environment (Recommended)
+Create and activate a Python virtual environment to isolate dependencies:
+```bash
+# On Windows
+python -m venv .venv
+.venv\Scripts\activate
+
+# On macOS/Linux
+python3 -m venv .venv
+source .venv/bin/activate
+```
+
+#### Step C: Install Dependencies
+Install all required libraries using the package manager:
 ```bash
 pip install -r requirements.txt
 ```
 
-### 3. Environment Setup
-Create a file named `.env` in the root directory (you can copy `.env.example` as a starting template):
+---
+
+### 3. Environment Configuration
+
+Create a `.env` file in the root of the project. You can copy the provided `.env.example` file:
+```bash
+cp .env.example .env
+```
+
+Open `.env` in a text editor and fill in your connection details and API keys:
+
 ```env
-ANTHROPIC_API_KEY=sk-ant-your-actual-api-key
-MONGO_URI=mongodb+srv://<username>:<password>@cluster0.xxxxx.mongodb.net/?retryWrites=true&w=majority
+# --- AI Providers (Provide at least one) ---
+# If both keys are set, OpenRouter (Gemini) is preferred to conserve Claude credits.
+OPENROUTER_API_KEY=your_openrouter_api_key_here
+OPENROUTER_MODEL=google/gemini-2.0-flash-001
+
+ANTHROPIC_API_KEY=your_anthropic_api_key_here
+
+# --- Database Configuration ---
+# Your MongoDB connection URI (e.g. from MongoDB Atlas)
+MONGO_URI=mongodb+srv://<username>:<password>@<cluster>.mongodb.net/deskmate?retryWrites=true&w=majority
 MONGO_DB_NAME=deskmate
 ```
-*(Do not commit `.env` to source control!)*
-
-### 4. Running the Application
-Launch the server with the following command:
-```bash
-python app.py
-```
-Upon launching:
-- The server will establish a connection to your MongoDB Atlas cluster.
-- It will automatically execute `seed_database_if_empty()`, seeding two default employee profiles (`employee_one` & `employee_two`) if they are not already present.
-- The FastAPI application will run on `http://localhost:8000`.
 
 ---
 
-## Verification & Testing Scenarios
+### 4. Running the Application
 
-Open your browser and navigate to `http://localhost:8000`. Use the employee dropdown in the bottom-left corner to test these exact scenarios:
+Start the FastAPI application server by executing:
+```bash
+cd backend
+python app.py
+```
+*Alternatively, you can run it using Uvicorn directly from the backend folder:*
+```bash
+cd backend
+uvicorn app:app --host 0.0.0.0 --port 8000 --reload
+```
 
-### Scenario 1: Single-Step Entitlement Query
-- **Active Employee**: `employee_one` (Alice Johnson)
-- **User Query**: `"Do I have access to Jira?"`
-- **Expected Outcome**:
-  - Claude calls `check_software_entitlement` for `employee_one` on `Jira`.
-  - Tool returns that she has access.
-  - Claude responds: *"Yes, Alice Johnson, you currently have access to Jira."*
+#### What happens at startup:
+1.  **Database Connection Check**: The server runs a ping check to verify if MongoDB is online.
+2.  **Graceful Degraded Mode**: If MongoDB is offline, the server logs a warning and proceeds to run. Users can still chat, but database lookups degrade gracefully.
+3.  **Automatic Seeding**: If the database is connected and empty, it automatically seeds two test employee profiles (`employee_one` & `employee_two`) into the `employee_entitlements` collection.
 
-### Scenario 2: Multi-Step Ticket Creation Flow (Conditional Logic)
-- **Active Employee**: `employee_one` (Alice Johnson)
-- **User Query**: `"I need Adobe Creative Suite. If I don't have it, please create a ticket."`
-- **Expected Outcome**:
-  - Claude calls `check_software_entitlement` for `employee_one` on `Adobe Creative Suite`.
-  - Tool returns that access is `False`.
-  - Claude processes this result and automatically invokes `create_access_ticket` with priority `high`.
-  - Claude reports the created Ticket ID (e.g. `TKT-XXXXXX`) and details to the user.
+---
 
-### Scenario 3: Entitlement Check for a User Who Has Access
-- **Active Employee**: `employee_two` (Bob Smith)
-- **User Query**: `"I need Adobe Creative Suite. If I don't have it, please create a ticket."`
-- **Expected Outcome**:
-  - Claude calls `check_software_entitlement` for `employee_two` on `Adobe Creative Suite`.
-  - Tool returns that Bob already has access.
-  - Claude responds that Bob is already entitled and does not call `create_access_ticket`.
+### 5. Interacting with the Web Interface
 
-### Scenario 4: Out-of-Scope Query Rejection
-- **Active Employee**: Either
-- **User Query**: `"Should I take this job offer?"` or `"What is the weather in London?"`
-- **Expected Outcome**:
-  - Claude identifies the query as out of the IT scope.
-  - Rejects the request politely without calling any tools.
+Once the server is running, open your web browser and go to:
+👉 **[http://localhost:8000](http://localhost:8000)**
 
-### Scenario 5: Check Ticket Status
-- **Active Employee**: Either
-- **User Query**: `"What is the status of ticket TKT-123456?"` (Replace with a valid ticket ID generated in Scenario 2)
-- **Expected Outcome**:
-  - Claude calls `get_ticket_status(ticket_id="TKT-123456")`.
-  - Returns the status of the ticket retrieved from MongoDB Atlas.
+The interface is split into two visual panes:
+1.  **Left (Chat Column)**: Select a mock employee profile, use suggested query chips, send message prompts, and view responses.
+2.  **Right (Observability Column)**: Watch the raw multi-step agent reasoning steps, tool calls, execution tokens, and timing durations render in real time.
+
+---
+
+## 🧪 Verification & Testing Scenarios
+
+Use the following step-by-step scenarios to verify the application features:
+
+### Scenario 1: Access Granted (Single-Step Entitlement Query)
+1.  Select **Bob Smith (employee_two)** from the employee dropdown.
+2.  Type: `"Do I have access to Photoshop?"` or click the suggestion chip: **Check my Adobe access**.
+3.  **Expected Response**: The agent will sanitize "Photoshop" to `adobe_creative_suite`, call `check_software_entitlement`, and reply:
+    > *"Bob Smith, you currently have access to Adobe Creative Suite."*
+4.  **Trace Check**: Verify in the right-side execution trace pane that the tool call ran, returned `has_access: true`, and finished in 1 turn.
+
+### Scenario 2: Access Denied + Ticket Creation Flow (Multi-Step Logic)
+1.  Select **Alice Johnson (employee_one)** from the employee dropdown.
+2.  Type: `"I need access to Adobe Creative Suite. Please check my access and if I don't have it, create a high priority ticket."`
+3.  **Expected Response**: The agent will check her access (which is `False`), see that she does not have access, automatically call `create_access_ticket` with priority `high`, and output:
+    > *"I checked your entitlements and you do not have access to Adobe Creative Suite. I have created a high priority access request ticket for you: **TKT-XXXXXX**."*
+4.  **Trace Check**: Observe the multi-step chain in the execution trace pane showing:
+    *   Step 1: API Call requesting entitlement check.
+    *   Step 2: Tool Call `check_software_entitlement` returning `has_access: False`.
+    *   Step 3: API Call deciding to create a ticket.
+    *   Step 4: Tool Call `create_access_ticket` returning `TKT-XXXXXX`.
+    *   Step 5: API Call summarizing the resolution.
+
+### Scenario 3: Checking Ticket Status
+1.  Copy the ticket ID (e.g. `TKT-123456`) generated in Scenario 2.
+2.  Type: `"What is the status of ticket TKT-123456?"`
+3.  **Expected Response**: The agent will run `get_ticket_status` and output:
+    > *"Ticket TKT-123456 is currently open. Priority: high. Assignee: Unassigned."*
+
+### Scenario 4: Conversation Cap & History Recovery
+1.  Chat history is persisted in the database. When you select a user, their history is loaded.
+2.  To protect token budgets, the conversation is capped at **10 messages**.
+3.  Once the limit is reached, input controls are disabled. Click the **New Chat** button in the header to clear history and reset.
+
+---
+
+## 🛠️ Project Structure & Architecture
+
+```
+├── backend/              # Python backend folder (deployed to HF Spaces)
+│   ├── app.py            # FastAPI Application Server & API endpoints
+│   ├── agent.py          # Agent reasoning loop orchestration (Claude & Gemini router)
+│   ├── tools.py          # Helpdesk agent tool definitions (entitlements, ticket operations)
+│   ├── schemas.py        # Pydantic schemas validating API requests & responses
+│   ├── mongo_client.py   # MongoDB database client wrapper & seeding logic
+│   ├── config.py         # Configuration loader validating environment keys
+│   └── requirements.txt  # Python package dependencies
+├── frontend/
+│   └── index.html        # Single-page HTML5/Vanilla JS app with premium styling
+└── .github/
+    └── workflows/
+        └── deploy-backend.yml # CI/CD deployment workflow to Hugging Face
+```

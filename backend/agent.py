@@ -2,8 +2,50 @@ import anthropic
 import json
 import httpx
 from datetime import datetime
+import inspect
 import config
 import tools
+import mongo_client
+
+# Centralized Registry mapping tool names to execution functions
+TOOL_REGISTRY = {
+    "check_software_entitlement": tools.check_software_entitlement,
+    "create_access_ticket": tools.create_access_ticket,
+    "get_ticket_status": tools.get_ticket_status
+}
+
+def execute_tool(tool_name: str, tool_input: dict, default_username: str) -> dict:
+    """Dynamically resolves and executes a tool via inspect module mapping."""
+    if tool_name not in TOOL_REGISTRY:
+        error_msg = f"Unknown tool name: {tool_name}"
+        config.logger.error(error_msg)
+        return {"error": error_msg}
+    
+    func = TOOL_REGISTRY[tool_name]
+    sig = inspect.signature(func)
+    
+    kwargs = {}
+    for param_name, param in sig.parameters.items():
+        if param_name in tool_input:
+            kwargs[param_name] = tool_input[param_name]
+        elif param_name == "username":
+            kwargs[param_name] = default_username
+        elif param.default is not inspect.Parameter.empty:
+            kwargs[param_name] = param.default
+        else:
+            # Safe fallbacks if required arguments are missing
+            if param_name == "software_name":
+                kwargs[param_name] = ""
+            elif param_name == "priority":
+                kwargs[param_name] = "high"
+            elif param_name == "description":
+                kwargs[param_name] = ""
+            elif param_name == "ticket_id":
+                kwargs[param_name] = ""
+            else:
+                kwargs[param_name] = None
+                
+    return func(**kwargs)
 
 def run_agent(user_message: str, username: str, history: list = None) -> dict:
     """Core orchestrator routing requests to OpenRouter (Gemini) or Anthropic (Claude) depending on API key availability."""
@@ -27,10 +69,14 @@ def run_agent(user_message: str, username: str, history: list = None) -> dict:
     # Check key priority: OpenRouter first (to save Claude credits as requested by user), then Anthropic.
     if config.OPENROUTER_API_KEY:
         config.logger.info("Using OpenRouter (Gemini 2.0 Flash) as the AI provider.")
-        return run_openrouter_agent(user_message, username, system_prompt, execution_trace, history=history)
+        result = run_openrouter_agent(user_message, username, system_prompt, execution_trace, history=history)
+        result["provider"] = "Gemini 2.0 Flash (OpenRouter)"
+        return result
     else:
         config.logger.info("Using Anthropic (Claude 3.5 Sonnet) as the AI provider.")
-        return run_claude_agent(user_message, username, system_prompt, execution_trace, history=history)
+        result = run_claude_agent(user_message, username, system_prompt, execution_trace, history=history)
+        result["provider"] = "Claude 3.5 Sonnet"
+        return result
 
 def run_claude_agent(user_message: str, username: str, system_prompt: str, execution_trace: list, history: list = None) -> dict:
     messages = []
@@ -61,6 +107,7 @@ def run_claude_agent(user_message: str, username: str, system_prompt: str, execu
             )
             
             api_call_duration = (datetime.utcnow() - api_call_start).total_seconds()
+            api_call_duration_ms = int(api_call_duration * 1000)
             config.logger.info(f"Iteration {iteration}: Received response from Claude in {api_call_duration:.2f}s. Stop reason: '{response.stop_reason}'")
             
             # Record api_call in execution_trace
@@ -84,7 +131,9 @@ def run_claude_agent(user_message: str, username: str, system_prompt: str, execu
                 "step": len(execution_trace) + 1,
                 "type": "api_call",
                 "timestamp": datetime.utcnow().isoformat() + "Z",
+                "duration_ms": api_call_duration_ms,
                 "data": {
+                    "provider": "Claude 3.5 Sonnet",
                     "model": config.CLAUDE_MODEL,
                     "stop_reason": response.stop_reason,
                     "input_tokens": input_tokens,
@@ -132,37 +181,29 @@ def run_claude_agent(user_message: str, username: str, system_prompt: str, execu
                     tool_result = {}
                     
                     try:
-                        if tool_name == "check_software_entitlement":
-                            tool_result = tools.check_software_entitlement(
-                                username=tool_input.get("username", username),
-                                software_name=tool_input.get("software_name", "")
-                            )
-                        elif tool_name == "create_access_ticket":
-                            tool_result = tools.create_access_ticket(
-                                username=tool_input.get("username", username),
-                                software_name=tool_input.get("software_name", ""),
-                                priority=tool_input.get("priority", "high"),
-                                description=tool_input.get("description", "")
-                            )
-                        elif tool_name == "get_ticket_status":
-                            tool_result = tools.get_ticket_status(
-                                ticket_id=tool_input.get("ticket_id", "")
-                            )
-                        else:
-                            error_msg = f"Unknown tool name: {tool_name}"
-                            config.logger.error(error_msg)
-                            tool_result = {"error": error_msg}
+                        tool_result = execute_tool(tool_name, tool_input, username)
                     except Exception as tool_ex:
                         error_msg = f"Exception running tool {tool_name}: {str(tool_ex)}"
                         config.logger.error(error_msg, exc_info=True)
                         tool_result = {"error": error_msg}
                         
                     tool_duration = (datetime.utcnow() - tool_start_time).total_seconds()
+                    tool_duration_ms = int(tool_duration * 1000)
+                    
+                    # Log tool execution to MongoDB audit_logs collection
+                    mongo_client.log_audit(
+                        username=username,
+                        tool_name=tool_name,
+                        tool_input=tool_input,
+                        tool_output=tool_result,
+                        response_time_ms=tool_duration_ms
+                    )
                     
                     execution_trace.append({
                         "step": len(execution_trace) + 1,
                         "type": "tool_call",
                         "timestamp": datetime.utcnow().isoformat() + "Z",
+                        "duration_ms": tool_duration_ms,
                         "data": {
                             "tool_name": tool_name,
                             "tool_input": tool_input,
@@ -202,6 +243,7 @@ def run_claude_agent(user_message: str, username: str, system_prompt: str, execu
             "step": len(execution_trace) + 1,
             "type": "error",
             "timestamp": datetime.utcnow().isoformat() + "Z",
+            "duration_ms": 0,
             "data": {"error": error_msg}
         })
         return {
@@ -218,6 +260,7 @@ def run_claude_agent(user_message: str, username: str, system_prompt: str, execu
             "step": len(execution_trace) + 1,
             "type": "error",
             "timestamp": datetime.utcnow().isoformat() + "Z",
+            "duration_ms": 0,
             "data": {"error": error_msg}
         })
         return {
@@ -285,6 +328,7 @@ def run_openrouter_agent(user_message: str, username: str, system_prompt: str, e
                 )
                 
             api_call_duration = (datetime.utcnow() - api_call_start).total_seconds()
+            api_call_duration_ms = int(api_call_duration * 1000)
             
             if response.status_code != 200:
                 error_msg = f"OpenRouter API Error (Status {response.status_code}): {response.text}"
@@ -332,7 +376,9 @@ def run_openrouter_agent(user_message: str, username: str, system_prompt: str, e
                 "step": len(execution_trace) + 1,
                 "type": "api_call",
                 "timestamp": datetime.utcnow().isoformat() + "Z",
+                "duration_ms": api_call_duration_ms,
                 "data": {
+                    "provider": "Gemini 2.0 Flash (OpenRouter)",
                     "model": config.OPENROUTER_MODEL,
                     "finish_reason": finish_reason,
                     "input_tokens": input_tokens,
@@ -374,38 +420,30 @@ def run_openrouter_agent(user_message: str, username: str, system_prompt: str, e
                 tool_result = {}
                 
                 try:
-                    if tool_name == "check_software_entitlement":
-                        tool_result = tools.check_software_entitlement(
-                            username=tool_input.get("username", username),
-                            software_name=tool_input.get("software_name", "")
-                        )
-                    elif tool_name == "create_access_ticket":
-                        tool_result = tools.create_access_ticket(
-                            username=tool_input.get("username", username),
-                            software_name=tool_input.get("software_name", ""),
-                            priority=tool_input.get("priority", "high"),
-                            description=tool_input.get("description", "")
-                        )
-                    elif tool_name == "get_ticket_status":
-                        tool_result = tools.get_ticket_status(
-                            ticket_id=tool_input.get("ticket_id", "")
-                        )
-                    else:
-                        error_msg = f"Unknown tool name: {tool_name}"
-                        config.logger.error(error_msg)
-                        tool_result = {"error": error_msg}
+                    tool_result = execute_tool(tool_name, tool_input, username)
                 except Exception as tool_ex:
                     error_msg = f"Exception running tool {tool_name}: {str(tool_ex)}"
                     config.logger.error(error_msg, exc_info=True)
                     tool_result = {"error": error_msg}
                     
                 tool_duration = (datetime.utcnow() - tool_start_time).total_seconds()
+                tool_duration_ms = int(tool_duration * 1000)
+                
+                # Log tool execution to MongoDB audit_logs collection
+                mongo_client.log_audit(
+                    username=username,
+                    tool_name=tool_name,
+                    tool_input=tool_input,
+                    tool_output=tool_result,
+                    response_time_ms=tool_duration_ms
+                )
                 
                 # Append tool result to execution trace
                 execution_trace.append({
                     "step": len(execution_trace) + 1,
                     "type": "tool_call",
                     "timestamp": datetime.utcnow().isoformat() + "Z",
+                    "duration_ms": tool_duration_ms,
                     "data": {
                         "tool_name": tool_name,
                         "tool_input": tool_input,
@@ -440,6 +478,7 @@ def run_openrouter_agent(user_message: str, username: str, system_prompt: str, e
             "step": len(execution_trace) + 1,
             "type": "error",
             "timestamp": datetime.utcnow().isoformat() + "Z",
+            "duration_ms": 0,
             "data": {"error": error_msg}
         })
         return {

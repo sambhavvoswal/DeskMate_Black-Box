@@ -235,3 +235,50 @@ def clear_chat_history(username: str) -> bool:
     except PyMongoError as e:
         config.logger.error(f"Error clearing chat history for '{username}': {e}", exc_info=True)
         return False
+
+def check_db_health() -> bool:
+    """Perform a ping check to verify database connectivity. Return True if OK, False if down."""
+    config.logger.info("Performing database connectivity ping check...")
+    try:
+        client = get_mongo_client()
+        client.admin.command('ping')
+        config.logger.info("Database ping check succeeded.")
+        return True
+    except Exception as e:
+        config.logger.error(f"Database health check failed: {e}")
+        return False
+
+def log_audit(username: str, tool_name: str, tool_input: dict, tool_output: dict, response_time_ms: int):
+    """Log tool executions to an audit_logs collection for compliance and monitoring."""
+    config.logger.info(f"Logging audit entry for user: '{username}', tool: '{tool_name}', latency: {response_time_ms}ms")
+    try:
+        client = get_mongo_client()
+        db = client["deskmate_history"]
+        audit_doc = {
+            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "username": username,
+            "tool_name": tool_name,
+            "input": tool_input,
+            "output": tool_output,
+            "response_time_ms": response_time_ms
+        }
+        db["audit_logs"].insert_one(audit_doc)
+        config.logger.info("Audit log entry successfully saved.")
+    except Exception as e:
+        config.logger.error(f"Failed to write to audit_logs collection: {e}", exc_info=True)
+
+def get_user_tickets(username: str) -> list:
+    """Retrieve all IT tickets created by a specific user from the database."""
+    config.logger.info(f"Retrieving tickets for user: '{username}'")
+    try:
+        db = get_database()
+        cursor = db["it_tickets"].find({"username": username})
+        tickets = []
+        for doc in cursor:
+            doc["_id"] = str(doc["_id"])
+            tickets.append(doc)
+        return tickets
+    except Exception as e:
+        config.logger.error(f"Error retrieving tickets for user '{username}': {e}", exc_info=True)
+        return []
+

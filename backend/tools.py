@@ -1,8 +1,50 @@
 import mongo_client
 import config
 
+SOFTWARE_ALIAS_MAP = {
+    # Adobe Creative Suite
+    "adobe": "adobe_creative_suite",
+    "adobe creative suite": "adobe_creative_suite",
+    "adobe_creative_suite": "adobe_creative_suite",
+    "photoshop": "adobe_creative_suite",
+    "illustrator": "adobe_creative_suite",
+    "acrobat": "adobe_creative_suite",
+    
+    # Office 365
+    "office": "office_365",
+    "office 365": "office_365",
+    "office_365": "office_365",
+    "m365": "office_365",
+    "o365": "office_365",
+    "word": "office_365",
+    "excel": "office_365",
+    
+    # VPN Access
+    "vpn": "vpn_access",
+    "vpn access": "vpn_access",
+    "vpn_access": "vpn_access",
+    "cisco vpn": "vpn_access",
+    "anyconnect": "vpn_access",
+    
+    # Jira
+    "jira": "jira",
+    "atlassian": "jira",
+    
+    # Slack
+    "slack": "slack",
+    "chat": "slack"
+}
+
+def sanitize_software_name(software_name: str) -> str:
+    """Normalize software names based on aliases for robust matching."""
+    if not software_name:
+        return ""
+    norm = software_name.lower().strip()
+    return SOFTWARE_ALIAS_MAP.get(norm, norm.replace(" ", "_"))
+
 def check_software_entitlement(username: str, software_name: str) -> dict:
     """Check if an employee has access to specific software."""
+    software_name = sanitize_software_name(software_name)
     config.logger.info(f"Tool check_software_entitlement called: username='{username}', software_name='{software_name}'")
     try:
         res = mongo_client.check_entitlement(username, software_name)
@@ -51,6 +93,7 @@ def check_software_entitlement(username: str, software_name: str) -> dict:
 
 def create_access_ticket(username: str, software_name: str, priority: str, description: str) -> dict:
     """Create an IT ticket for software access. Priority must be one of low, medium, high, critical."""
+    software_name = sanitize_software_name(software_name)
     config.logger.info(f"Tool create_access_ticket called: username='{username}', software_name='{software_name}', priority='{priority}'")
     try:
         valid_priorities = ["low", "medium", "high", "critical"]

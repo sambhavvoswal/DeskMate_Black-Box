@@ -2,10 +2,10 @@ import os
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field
 from datetime import datetime
 import config
 import mongo_client
+import schemas
 from agent import run_agent
 
 # Initialize FastAPI App
@@ -24,26 +24,26 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Request schema validation
-class ChatRequest(BaseModel):
-    message: str = Field(..., description="The user's query or support request.")
-    username: str = Field("employee_one", description="The context username for query.")
-
 @app.on_event("startup")
 async def startup_event():
     """Run startup checks and seed database if it's empty."""
     config.logger.info("Starting DeskMate API Server...")
     try:
-        # Seed MongoDB database
-        mongo_client.seed_database_if_empty()
-        config.logger.info("API Startup sequence completed successfully.")
+        # Check database connectivity
+        db_online = mongo_client.check_db_health()
+        if db_online:
+            config.logger.info("MongoDB connection is healthy. Seeding database if empty...")
+            mongo_client.seed_database_if_empty()
+            config.logger.info("API Startup sequence completed successfully.")
+        else:
+            config.logger.warning(
+                "⚠️ WARNING: MongoDB is currently unreachable. DeskMate will run in degraded mode: "
+                "chat history and entitlement checking will be unavailable, but the chat interface remains interactive."
+            )
     except Exception as e:
-        config.logger.error(f"Error during server startup checks: {e}", exc_info=True)
+        config.logger.error(f"Unexpected error during server startup checks: {e}", exc_info=True)
 
-class NewChatRequest(BaseModel):
-    username: str = Field(..., description="The username to clear chat history for.")
-
-@app.get("/api/history/{username}")
+@app.get("/api/history/{username}", response_model=schemas.HistoryResponse)
 async def get_history(username: str):
     """Retrieve chat history for a user."""
     user = username.strip()
@@ -53,7 +53,7 @@ async def get_history(username: str):
     return {"messages": history, "limit_reached": len(history) >= 10}
 
 @app.post("/api/chat/new")
-async def new_chat(req: NewChatRequest):
+async def new_chat(req: schemas.NewChatRequest):
     """Clear chat history for a user."""
     user = req.username.strip()
     if not user:
@@ -61,8 +61,8 @@ async def new_chat(req: NewChatRequest):
     mongo_client.clear_chat_history(user)
     return {"status": "success"}
 
-@app.post("/api/chat")
-async def chat(req: ChatRequest):
+@app.post("/api/chat", response_model=schemas.ChatResponse)
+async def chat(req: schemas.ChatRequest):
     """Main chat endpoint that processes messages through the Agentic loop with history context."""
     msg = req.message.strip()
     user = req.username.strip()
@@ -88,7 +88,8 @@ async def chat(req: ChatRequest):
                 "username": user,
                 "status": "limit_reached",
                 "limit_reached": True,
-                "timestamp": datetime.utcnow().isoformat() + "Z"
+                "timestamp": datetime.utcnow().isoformat() + "Z",
+                "provider": "None"
             }
             
         # Get active context (last 8 messages)
@@ -116,10 +117,51 @@ async def chat(req: ChatRequest):
         config.logger.error(f"Error in chat endpoint: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server error occurred.")
 
+@app.get("/api/provider", response_model=schemas.ActiveProviderResponse)
+async def get_active_provider():
+    """Return the active AI provider based on loaded keys."""
+    if config.OPENROUTER_API_KEY:
+        return {
+            "provider": "Gemini 2.0 Flash (OpenRouter)",
+            "model": config.OPENROUTER_MODEL
+        }
+    elif config.ANTHROPIC_API_KEY:
+        return {
+            "provider": "Claude 3.5 Sonnet",
+            "model": config.CLAUDE_MODEL
+        }
+    else:
+        return {
+            "provider": "None (No API keys configured)",
+            "model": "None"
+        }
+
+@app.get("/api/tickets/{username}")
+async def get_user_tickets(username: str):
+    """Retrieve all tickets raised by a user."""
+    user = username.strip()
+    if not user:
+        raise HTTPException(status_code=400, detail="Username cannot be empty.")
+    tickets = mongo_client.get_user_tickets(user)
+    return {"tickets": tickets}
+
+
 @app.get("/")
 async def read_root():
     """Serve the single-page HTML frontend."""
+    # 1. Try relative to current working directory
     frontend_path = os.path.join("frontend", "index.html")
+    
+    # 2. Try relative to app.py location (e.g., ../frontend/index.html)
+    if not os.path.exists(frontend_path):
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        frontend_path = os.path.join(base_dir, "..", "frontend", "index.html")
+        
+    # 3. Try inside the same folder as app.py (if frontend is copied directly next to it)
+    if not os.path.exists(frontend_path):
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        frontend_path = os.path.join(base_dir, "frontend", "index.html")
+        
     if not os.path.exists(frontend_path):
         config.logger.error(f"Frontend file not found at: {frontend_path}")
         raise HTTPException(status_code=404, detail="Frontend file not found.")
@@ -132,6 +174,7 @@ async def health_check():
 
 if __name__ == "__main__":
     import uvicorn
-    # Make sure we log the launch environment
-    config.logger.info("Starting server with uvicorn on http://0.0.0.0:8000")
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    import os
+    port = int(os.getenv("PORT", 8000))
+    config.logger.info(f"Starting server with uvicorn on http://0.0.0.0:{port}")
+    uvicorn.run(app, host="0.0.0.0", port=port)
