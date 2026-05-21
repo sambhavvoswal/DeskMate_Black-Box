@@ -158,3 +158,29 @@ Use the following step-by-step scenarios to verify the application features:
     └── workflows/
         └── deploy-backend.yml # CI/CD deployment workflow to Hugging Face
 ```
+
+---
+
+## 🌐 Deployment Architecture (Deployment in process)
+
+The DeskMate application is designed as a split-architecture application:
+
+### 1. Frontend Hosting (Vercel / Static Host)
+The [frontend/index.html] file is a pure, single-file HTML5 client with CSS and Vanilla JS. It can be hosted on **Vercel**, Netlify, GitHub Pages, or any static file hosting service. 
+
+*   **Dynamic API Auto-Detection**: When the frontend loads, it automatically tests if a local backend is active at `http://localhost:8000`. If active, it routes requests locally. If offline, it dynamically falls back to your remote Hugging Face Space backend URL (`https://sambhavvoswal-deskmate-api.hf.space`). You can customize the fallback URL inside the `HF_BACKEND_URL` variable in `index.html`.
+
+### 2. Backend Hosting (Hugging Face Spaces)
+The [backend/] folder contains the FastAPI application code, package requirements, and docker instructions. 
+*   **Docker SDK**: Deploy the backend to a Hugging Face Space configured with the **Docker SDK** (which binds automatically to dynamic port `7860`).
+*   **Secrets**: Remember to configure the required environment variables (e.g. `MONGO_URI`, `ANTHROPIC_API_KEY`) inside your Hugging Face Space Settings.
+
+### 3. Automated CI/CD (GitHub Actions)
+A pre-configured CI/CD workflow is included at [.github/workflows/deploy-backend.yml]. 
+Whenever you push changes inside the `backend/` folder to GitHub:
+1. GitHub Actions triggers and checks out the codebase.
+2. It pushes the contents of the `backend/` directory directly to the Hugging Face Space git repository.
+3. Hugging Face automatically rebuilds the Docker container and restarts your API.
+
+*Note: You only need to add `HF_TOKEN` (your Hugging Face User Access Write Token) as a repository secret under your GitHub Repository Settings.*
+

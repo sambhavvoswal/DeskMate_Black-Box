@@ -35,7 +35,7 @@ When the LLM decides to call a tool, `execute_tool()` handles parameter resoluti
 
 ## 2. Strong Schema Validation with Pydantic
 
-To enforce type-safety and request-response consistency, DeskMate defines all data shapes in [schemas.py](file:///d:/learn2code/zzz...VStand4u/client%20task/DeskMate_Black-Box/schemas.py) using Pydantic (v2).
+To enforce type-safety and request-response consistency, DeskMate defines all data shapes in [schemas.py]using Pydantic (v2).
 
 ### Models Defined:
 *   `ChatRequest`: Validates inbound query text and session username from the frontend client.
@@ -77,7 +77,7 @@ DeskMate utilizes MongoDB Atlas across two logical namespaces to store entitleme
 
 LLMs and end-users often submit varied names for software (e.g., "photoshop", "Adobe", "Creative Suite"). If query parameters were mapped directly to database keys, lookups would fail.
 
-DeskMate addresses this via `SOFTWARE_ALIAS_MAP` in [tools.py](file:///d:/learn2code/zzz...VStand4u/client%20task/DeskMate_Black-Box/tools.py):
+DeskMate addresses this via `SOFTWARE_ALIAS_MAP` in [tools.py]:
 *   Before calling any database lookup or creating a ticket, user-facing inputs are passed through `sanitize_software_name(software_name)`.
 *   Common variations are resolved to canonical database keys:
     *   `"photoshop"` / `"illustrator"` / `"adobe"` ──► `"adobe_creative_suite"`
@@ -100,5 +100,5 @@ Every backend chat response contains an `execution_trace` list, tracking:
 
 To enable employees to view their raised tickets asynchronously without talking to the AI agent:
 *   **Decoupled Retrieval Endpoint**: A dedicated GET route `/api/tickets/{username}` fetches tickets directly from MongoDB `it_tickets` collection, bypassing LLM processing entirely to save tokens.
-*   **Client-Side Overlay (Modal)**: A responsive popup overlay rendering details (Ticket ID, Software Name, Priority, and Status) is managed in [index.html](file:///d:/learn2code/zzz...VStand4u/client%20task/DeskMate_Black-Box/frontend/index.html) with Vanilla JS and styled using CSS transitions.
+*   **Client-Side Overlay (Modal)**: A responsive popup overlay rendering details (Ticket ID, Software Name, Priority, and Status) is managed in [index.html] with Vanilla JS and styled using CSS transitions.
 

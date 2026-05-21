@@ -68,8 +68,7 @@ To conserve API token costs and balance response speeds, DeskMate supports dynam
 
 ## 4. Observability & Latency Tracking
 
-Telemetry timing metrics are generated in-memory during the agent loop execution in [agent.py](file:///d:/learn2code/zzz...VStand4u/client%20task/DeskMate_Black-Box/agent.py):
-
+Telemetry timing metrics are generated in-memory during the agent loop execution in [agent.py]
 *   **API Latency**: Timed using `datetime.utcnow()` markers surrounding the completions endpoint request, recorded as `duration_ms` in the trace.
 *   **Tool Latency**: Timed surrounding tool execution, recorded as `duration_ms` inside trace steps.
 *   **Provider Tracking**: Every step includes the provider name metadata. This is returned to the client and rendered in the frontend Execution Trace panel, giving administrators a clear view of where bottlenecks occur.
