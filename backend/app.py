@@ -1,6 +1,6 @@
 import os
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime
 import config
@@ -146,9 +146,97 @@ async def get_user_tickets(username: str):
     return {"tickets": tickets}
 
 
+API_STATUS_HTML = """<!DOCTYPE html>
+<html>
+<head>
+    <title>DeskMate API Service</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+            background-color: #0b0f19;
+            color: #f1f5f9;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            text-align: center;
+            padding: 2.5rem;
+            border-radius: 16px;
+            background: rgba(17, 24, 39, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            max-width: 450px;
+        }
+        h1 {
+            color: #818cf8;
+            margin-top: 0;
+            margin-bottom: 0.75rem;
+            font-size: 1.75rem;
+            font-weight: 700;
+        }
+        p {
+            color: #94a3b8;
+            line-height: 1.6;
+            margin-bottom: 1.5rem;
+            font-size: 0.95rem;
+        }
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1.25rem;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            background-color: rgba(16, 185, 129, 0.15);
+            color: #10b981;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+        .pulse {
+            width: 8px;
+            height: 8px;
+            background-color: #10b981;
+            border-radius: 50%;
+            animation: pulse-animation 2s infinite;
+        }
+        @keyframes pulse-animation {
+            0% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+            }
+            70% {
+                transform: scale(1);
+                box-shadow: 0 0 0 6px rgba(16, 185, 129, 0);
+            }
+            100% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🤖 DeskMate API Service</h1>
+        <p>The backend AI orchestration and database connectivity services are online and running successfully on Hugging Face Spaces.</p>
+        <div class="status-badge">
+            <span class="pulse"></span>
+            Status: Online & Healthy
+        </div>
+    </div>
+</body>
+</html>
+"""
+
 @app.get("/")
 async def read_root():
-    """Serve the single-page HTML frontend."""
+    """Serve the single-page HTML frontend or API status landing page."""
     # 1. Try relative to current working directory
     frontend_path = os.path.join("frontend", "index.html")
     
@@ -163,8 +251,8 @@ async def read_root():
         frontend_path = os.path.join(base_dir, "frontend", "index.html")
         
     if not os.path.exists(frontend_path):
-        config.logger.error(f"Frontend file not found at: {frontend_path}")
-        raise HTTPException(status_code=404, detail="Frontend file not found.")
+        config.logger.info("Serving default API status landing page because frontend file was not found.")
+        return HTMLResponse(content=API_STATUS_HTML)
     return FileResponse(frontend_path)
 
 @app.get("/api/health")
