@@ -631,29 +631,47 @@
     const HF_BACKEND_URL = "https://sambhavvoswal-deskmate-api.hf.space"; 
 
     // Auto-detect API base URL:
-    // 1. If served directly from port 8000, use window.location.origin.
-    // 2. Otherwise, check if a local backend is active on http://localhost:8000.
-    // 3. Fall back to Hugging Face Space backend if local is unavailable.
+    // 1. If served directly from local ports (7860 or 8000), route locally immediately.
+    // 2. Try pinging local backend on port 7860.
+    // 3. Try pinging local backend on port 8000.
+    // 4. Fall back to Hugging Face Space URL.
     const API_BASE_PROMISE = (async () => {
-      if (window.location.origin.endsWith(":8000")) {
-        return window.location.origin;
+      const origin = window.location.origin;
+      if (origin.endsWith(":7860") || origin.endsWith(":8000")) {
+        return origin;
       }
+      
+      // Try port 7860
       try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 1000); // 1-second quick timeout
+        const timeoutId = setTimeout(() => controller.abort(), 1000);
+        const response = await fetch("http://localhost:7860/api/health", { 
+          signal: controller.signal,
+          mode: "cors" 
+        });
+        clearTimeout(timeoutId);
+        if (response.ok) {
+          console.log("Local backend found on http://localhost:7860");
+          return "http://localhost:7860";
+        }
+      } catch (e) {}
+
+      // Try port 8000
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 1000);
         const response = await fetch("http://localhost:8000/api/health", { 
           signal: controller.signal,
           mode: "cors" 
         });
         clearTimeout(timeoutId);
         if (response.ok) {
-          console.log("Localhost backend active. Routing to http://localhost:8000");
+          console.log("Local backend found on http://localhost:8000");
           return "http://localhost:8000";
         }
-      } catch (e) {
-        // Localhost is offline
-      }
-      console.log(`Localhost offline. Routing to Hugging Face backend: ${HF_BACKEND_URL}`);
+      } catch (e) {}
+      
+      console.log(`Local backend offline. Routing to Hugging Face: ${HF_BACKEND_URL}`);
       return HF_BACKEND_URL;
     })();
 

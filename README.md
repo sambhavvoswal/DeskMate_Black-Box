@@ -84,7 +84,7 @@ python app.py
 *Alternatively, you can run it using Uvicorn directly from the backend folder:*
 ```bash
 cd backend
-uvicorn app:app --host 0.0.0.0 --port 8000 --reload
+uvicorn app:app --host 0.0.0.0 --port 7860 --reload
 ```
 
 #### What happens at startup:
@@ -97,7 +97,7 @@ uvicorn app:app --host 0.0.0.0 --port 8000 --reload
 ### 5. Interacting with the Web Interface
 
 Once the server is running, open your web browser and go to:
-👉 **[http://localhost:8000](http://localhost:8000)**
+👉 **[http://localhost:7860](http://localhost:7860)**
 
 The interface is split into two visual panes:
 1.  **Left (Chat Column)**: Select a mock employee profile, use suggested query chips, send message prompts, and view responses.
@@ -168,7 +168,7 @@ The DeskMate application is designed as a split-architecture application:
 ### 1. Frontend Hosting (Vercel / Static Host)
 The [frontend/index.html] file is a pure, single-file HTML5 client with CSS and Vanilla JS. It can be hosted on **Vercel**, Netlify, GitHub Pages, or any static file hosting service. 
 
-*   **Dynamic API Auto-Detection**: When the frontend loads, it automatically tests if a local backend is active at `http://localhost:8000`. If active, it routes requests locally. If offline, it dynamically falls back to your remote Hugging Face Space backend URL (`https://sambhavvoswal-deskmate-api.hf.space`). You can customize the fallback URL inside the `HF_BACKEND_URL` variable in `index.html`.
+*   **Dynamic API Auto-Detection**: When the frontend loads, it automatically tests if a local backend is active at `http://localhost:7860` or `http://localhost:8000`. If active, it routes requests locally. If offline, it dynamically falls back to your remote Hugging Face Space backend URL (`https://sambhavvoswal-deskmate-api.hf.space`). You can customize the fallback URL inside the `HF_BACKEND_URL` variable in `index.html`.
 
 ### 2. Backend Hosting (Hugging Face Spaces)
 The [backend/] folder contains the FastAPI application code, package requirements, and docker instructions. 
