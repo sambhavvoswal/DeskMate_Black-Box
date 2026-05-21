@@ -26,7 +26,7 @@ jobs:
           git config --global user.name "GitHub Actions"
           
           # Clone the HF Space repo (which contains the HF git history)
-          git clone https://user:$HF_TOKEN@huggingface.co/spaces/$HF_SPACE_REPO hf_space
+          git clone https://user:$HF_TOKEN@https://huggingface.co/spaces/sambhavvoswal/deskmate-api hf_space
           
           # Navigate to cloned repository
           cd hf_space
