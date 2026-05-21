@@ -7,7 +7,6 @@ import config
 import tools
 import mongo_client
 
-
 # Centralized Registry mapping tool names to execution functions
 TOOL_REGISTRY = {
     "check_software_entitlement": tools.check_software_entitlement,
