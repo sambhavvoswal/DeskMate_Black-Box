@@ -60,8 +60,11 @@ def run_agent(user_message: str, username: str, history: list = None) -> dict:
         "- Checking ticket status\n\n"
         "You can ONLY handle IT-related requests. For anything outside IT scope "
         "(e.g., HR questions, personal advice), politely refuse.\n\n"
-        "When an employee asks for software access they don't have, always offer "
-        "to create a ticket with priority 'high'.\n\n"
+        "Flow logic rules for software access queries:\n"
+        "1. When an employee asks to check their access or requests access to a software, always call 'check_software_entitlement' first.\n"
+        "2. If 'check_software_entitlement' indicates they already have access, inform them and DO NOT offer to create a ticket.\n"
+        "3. If they do not have access but there is already an open ticket (has_open_ticket is true), inform them of the existing open ticket (including its ID) and DO NOT offer or try to create a new ticket.\n"
+        "4. If they do not have access and there is no open ticket, offer to create a ticket with priority 'high'.\n\n"
         "Be concise, helpful, and always include relevant details in your response.\n\n"
         f"Current employee: {username}"
     )
