@@ -57,8 +57,7 @@ DeskMate utilizes MongoDB Atlas across two logical namespaces to store entitleme
 
 ### B. User Session & History Database (`deskmate_history`):
 *   `chat_history`: Stores conversational records per user.
-    *   **Context Optimization**: To optimize token consumption and prevent context window exhaustion, DeskMate retrieves the full history but only sends the **last 8 messages** (4 user turns) to the LLM.
-    *   **Conversation Caps**: A session limit of **10 messages** is enforced. If a session reaches this size, the FastAPI endpoint returns a message indicating the limit has been reached, disabling further inputs until the user clicks the "New Chat" button to clear history.
+    *   **Context Optimization**: To optimize token consumption and prevent context window exhaustion, DeskMate retrieves the full history but only sends the **last 8 messages** (4 user turns) to the LLM. Because this active context windowing enforces a strict token cap per call, the user can have unlimited continuous conversations without incurring growing token costs. The previous 10-message session limit has been removed.
 *   `audit_logs`: A compliance collection logging every tool invocation.
     ```json
     {

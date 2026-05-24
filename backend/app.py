@@ -50,7 +50,7 @@ async def get_history(username: str):
     if not user:
         raise HTTPException(status_code=400, detail="Username cannot be empty.")
     history = mongo_client.get_chat_history(user)
-    return {"messages": history, "limit_reached": len(history) >= 10}
+    return {"messages": history, "limit_reached": False}
 
 @app.post("/api/chat/new")
 async def new_chat(req: schemas.NewChatRequest):
@@ -80,18 +80,6 @@ async def chat(req: schemas.ChatRequest):
         # Load full history from MongoDB
         full_history = mongo_client.get_chat_history(user)
         
-        # 10 message limit check
-        if len(full_history) >= 10:
-            return {
-                "response": "Conversation limit reached (10 messages). Please start a new chat.",
-                "execution_trace": [],
-                "username": user,
-                "status": "limit_reached",
-                "limit_reached": True,
-                "timestamp": datetime.utcnow().isoformat() + "Z",
-                "provider": "None"
-            }
-            
         # Get active context (last 8 messages)
         active_context = full_history[-8:]
         
@@ -108,9 +96,9 @@ async def chat(req: schemas.ChatRequest):
             mongo_client.save_chat_history(user, full_history)
             
             # Update limit_reached flag in result
-            result["limit_reached"] = len(full_history) >= 10
+            result["limit_reached"] = False
         else:
-            result["limit_reached"] = len(full_history) >= 10
+            result["limit_reached"] = False
             
         return result
     except Exception as e:

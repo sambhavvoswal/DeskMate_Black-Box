@@ -748,11 +748,6 @@
             addMessageToChat(sender, msg.content, role);
           });
         }
-        
-        // Handle limit check
-        if (data.limit_reached) {
-          disableChatInput();
-        }
       } catch (error) {
         console.error("Failed to load chat history:", error);
         addMessageToChat("DeskMate", `Warning: Could not load chat history from server.`, "error");
@@ -765,13 +760,11 @@
       
       messageInput.disabled = true;
       sendBtn.disabled = true;
-      messageInput.placeholder = "Conversation limit reached. Click 'New Chat' to reset.";
+      messageInput.placeholder = "Conversation disabled.";
       
       // Disable chips
       const chips = document.querySelectorAll(".query-chip");
       chips.forEach(chip => chip.disabled = true);
-      
-      addMessageToChat("System", "⚠️ Conversation limit reached (10 messages). Please click 'New Chat' in the top right to start a new session.", "system");
     }
 
     async function startNewChat() {
@@ -858,24 +851,16 @@
         // Update execution trace panel
         updateTrace(data.execution_trace);
         
-        // Disable chat input if limit has been reached
-        if (data.limit_reached) {
-          disableChatInput();
-        }
-        
       } catch (error) {
         addMessageToChat("DeskMate", `Error: ${error.message}`, "error");
         updateTrace([{ error: error.message, timestamp: new Date().toISOString() }]);
       } finally {
-        // Re-enable UI controls only if limit is not reached
-        const limitReached = document.getElementById("messageInput").placeholder.includes("limit reached");
-        if (!limitReached) {
-          sendBtn.disabled = false;
-          messageInput.disabled = false;
-          const chips = document.querySelectorAll(".query-chip");
-          chips.forEach(chip => chip.disabled = false);
-          messageInput.focus();
-        }
+        // Re-enable UI controls
+        sendBtn.disabled = false;
+        messageInput.disabled = false;
+        const chips = document.querySelectorAll(".query-chip");
+        chips.forEach(chip => chip.disabled = false);
+        messageInput.focus();
       }
     }
 

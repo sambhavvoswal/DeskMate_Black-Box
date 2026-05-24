@@ -134,10 +134,10 @@ Use the following step-by-step scenarios to verify the application features:
 3.  **Expected Response**: The agent will run `get_ticket_status` and output:
     > *"Ticket TKT-123456 is currently open. Priority: high. Assignee: Unassigned."*
 
-### Scenario 4: Conversation Cap & History Recovery
+### Scenario 4: Conversation Persistence & History Recovery
 1.  Chat history is persisted in the database. When you select a user, their history is loaded.
-2.  To protect token budgets, the conversation is capped at **10 messages**.
-3.  Once the limit is reached, input controls are disabled. Click the **New Chat** button in the header to clear history and reset.
+2.  Conversations are unlimited, and history persists indefinitely in the database.
+3.  Click the **New Chat** button in the header if you want to clear the history and start a new session.
 
 ---
 
